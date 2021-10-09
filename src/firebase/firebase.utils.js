@@ -1,8 +1,9 @@
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
-import 'firebase/compat/auth';
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, signInWithPopup, } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc  } from 'firebase/firestore';
 
-const config = {
+
+const firebaseApp = initializeApp({
     apiKey: "AIzaSyD8x3RQUy5ZOPpKHRkBMgOixht3nupt7JU",
     authDomain: "bethehero-db.firebaseapp.com",
     projectId: "bethehero-db",
@@ -10,46 +11,61 @@ const config = {
     messagingSenderId: "1045270804893",
     appId: "1:1045270804893:web:09a6229c5aa9944e825774",
     measurementId: "G-V0WWWDPWMT"
+});
+
+export const auth = getAuth(firebaseApp)
+export const firestore = getFirestore(firebaseApp)
+
+
+
+
+const google_provider = new GoogleAuthProvider(auth);
+
+export const signInWithGoogle = () => 
+{
+    signInWithPopup(auth , google_provider)
+    
 };
 
-firebase.initializeApp(config);
-
-export const createUserProfileDocument = async (userAuth, additionalData) => {
+export const createUserProfileDocument =  async (userAuth, additionalData) => {
     if (!userAuth) return;
-  
-    const userRef = firestore.doc(`users/${userAuth.uid}`);
-  
-    const snapShot = await userRef.get();
-  
-    if (!snapShot.exists) {
-      const { displayName, email } = userAuth;
-      const createdAt = new Date();
-      try {
-        await userRef.set({
-          displayName,
-          email,
-          createdAt,
-          ...additionalData
-        });
-      } catch (error) {
-        console.log('error creating user', error.message);
-      }
-    }
-  
+
+    const userRef = doc(firestore, `users/${userAuth.uid}`)
+    const snapShot = await getDoc(userRef)
+
+    if (!snapShot.exists()){
+        const { displayName, email } = userAuth
+        const createdAt = new Date(); 
+        try{
+            await setDoc(userRef,
+            {
+                displayName,
+                email,
+                createdAt,
+                ...additionalData
+            }
+        )
+    } catch(err){
+        console.log('Data is not created',err)
+    }}
     return userRef;
-  };
+}
+
+// export const signUpNewUser = () => 
+// {
+//     createUserWithEmailAndPassword(auth, email, password)
+//     .then((userCredential) => {
+//         const user = userCredential.user;
+//     })
+//     .catch((error) => {
+//         const errorCode = error.code;
+//         const errorMessage = error.message;
+//     });
+// };
+    
 
 
-export const auth = firebase.auth();
-export const firestore = firebase.firestore();
-
-
-
-const provider = new firebase.auth.GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-export const signInWithGoogle = () => auth.signInWithPopup(provider);
-
-export default firebase;
+export default firebaseApp;
 
 
 
